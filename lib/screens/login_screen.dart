@@ -35,7 +35,7 @@ Future<User?> signInWithFacebook() async {
   if (result.status == LoginStatus.success) {
     final AccessToken accessToken = result.accessToken!;
     final OAuthCredential credential =
-        FacebookAuthProvider.credential(accessToken.tokenString);
+        FacebookAuthProvider.credential(accessToken.token);
     final UserCredential userCredential =
         await FirebaseAuth.instance.signInWithCredential(credential);
     return userCredential.user;
@@ -90,15 +90,34 @@ class _LoginScreenState extends State<LoginScreen> {
 
   void _handleFacebookSignIn() async {
     try {
-      User? user = await signInWithFacebook();
-      if (user != null) {
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (context) => HomeScreen(user: user)),
+      final LoginResult result = await FacebookAuth.instance.login();
+
+      if (result.status == LoginStatus.success) {
+        final AccessToken accessToken = result.accessToken!;
+
+        final OAuthCredential credential =
+            FacebookAuthProvider.credential(accessToken.token);
+
+        final UserCredential userCredential =
+            await FirebaseAuth.instance.signInWithCredential(credential);
+        final User? user = userCredential.user;
+
+        if (user != null) {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => HomeScreen(user: user)),
+          );
+        } else {
+          print('Facebook sign-in returned null user');
+        }
+      } else {
+        throw FirebaseAuthException(
+          code: 'ERROR_FACEBOOK_LOGIN_FAILED',
+          message: result.message,
         );
       }
     } catch (e) {
-      print(e);
+      print('Error signing in with Facebook: $e');
     }
   }
 

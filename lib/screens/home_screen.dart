@@ -2,8 +2,10 @@ import 'dart:convert';
 
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_facebook_auth/flutter_facebook_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:http/http.dart' as http;
+import 'package:url_launcher/url_launcher_string.dart';
 
 class HomeScreen extends StatefulWidget {
   final User user;
@@ -15,7 +17,7 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  List<String> _imageUrls = [];
+  List<Map<String, String>> _articles = [];
   bool _isLoading = true;
 
   @override
@@ -35,10 +37,12 @@ class _HomeScreenState extends State<HomeScreen> {
         final Map<String, dynamic> data = json.decode(response.body);
         final List articles = data['articles'];
         setState(() {
-          _imageUrls = articles
-              .map<String>((article) => article['urlToImage']?.toString() ?? '')
-              .where((url) => url.isNotEmpty)
-              .cast<String>()
+          _articles = articles
+              .map<Map<String, String>>((article) => {
+                    'urlToImage': article['urlToImage']?.toString() ?? '',
+                    'url': article['url']?.toString() ?? '',
+                  })
+              .where((article) => article['urlToImage']!.isNotEmpty)
               .toList();
           _isLoading = false;
         });
@@ -60,6 +64,125 @@ class _HomeScreenState extends State<HomeScreen> {
     await GoogleSignIn().signOut();
     await FirebaseAuth.instance.signOut();
     Navigator.pop(context);
+  }
+
+  Future<void> _launchURL(String url) async {
+    if (await canLaunchUrlString(url)) {
+      await launchUrlString(url);
+    } else {
+      throw 'Could not launch $url';
+    }
+  }
+
+  // Method to show dialog
+  void _showPostDialog(BuildContext context, String imageUrl) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('Post to Facebook'),
+          content: Text('Do you want to post this image to Facebook?'),
+          actions: <Widget>[
+            TextButton(
+              child: Text('Cancel'),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+            TextButton(
+              child: Text('Post'),
+              onPressed: () {
+                Navigator.of(context).pop();
+                _handleFacebookPost(context, imageUrl);
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  // Method to handle Facebook post
+  Future<void> _handleFacebookPost(
+      BuildContext context, String imageUrl) async {
+    try {
+      final LoginResult result = await FacebookAuth.instance.login();
+
+      if (result.status == LoginStatus.success) {
+        final AccessToken accessToken = result.accessToken!;
+        _fetchFacebookGroups(context, accessToken, imageUrl);
+      } else {
+        throw Exception('Facebook login failed: ${result.message}');
+      }
+    } catch (e) {
+      print('Error during Facebook login: $e');
+    }
+  }
+
+  // Method to fetch Facebook groups
+  Future<void> _fetchFacebookGroups(
+      BuildContext context, AccessToken accessToken, String imageUrl) async {
+    final response = await FacebookAuth.instance.getUserData(
+      fields: 'groups{name,id}',
+    );
+
+    if (response.containsKey('groups')) {
+      List<dynamic> groups = response['groups']['data'];
+      _showGroupsDialog(context, groups, imageUrl);
+    } else {
+      print('No groups found');
+    }
+  }
+
+  // Method to show groups dialog
+  void _showGroupsDialog(
+      BuildContext context, List<dynamic> groups, String imageUrl) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('Select a Group'),
+          content: Container(
+            width: double.minPositive,
+            child: ListView.builder(
+              shrinkWrap: true,
+              itemCount: groups.length,
+              itemBuilder: (context, index) {
+                return ListTile(
+                  title: Text(groups[index]['name']),
+                  onTap: () {
+                    Navigator.of(context).pop();
+                    _postToGroup(groups[index]['id'], imageUrl);
+                  },
+                );
+              },
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  // Method to post to group
+  Future<void> _postToGroup(String groupId, String imageUrl) async {
+    final accessToken = (await FacebookAuth.instance.accessToken)!.token;
+    final uri = Uri.https('graph.facebook.com', '/$groupId/photos', {
+      'access_token': accessToken,
+    });
+
+    final response = await http.post(
+      uri,
+      body: {
+        'url': imageUrl,
+        'caption': 'Check out this image!',
+      },
+    );
+
+    if (response.statusCode == 200) {
+      print('Image posted to group successfully');
+    } else {
+      print('Failed to post image to group: ${response.body}');
+    }
   }
 
   @override
@@ -122,13 +245,16 @@ class _HomeScreenState extends State<HomeScreen> {
                 crossAxisCount: 2,
                 padding: EdgeInsets.all(16.0),
                 children: List.generate(
-                  _imageUrls.length,
+                  _articles.length,
                   (index) {
                     return Card(
                       child: InkWell(
-                        onTap: () {},
+                        onTap: () {
+                          _showPostDialog(
+                              context, _articles[index]['urlToImage']!);
+                        },
                         child: Image.network(
-                          _imageUrls[index],
+                          _articles[index]['urlToImage']!,
                           fit: BoxFit.cover,
                         ),
                       ),

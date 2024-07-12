@@ -1,10 +1,7 @@
 plugins {
     id "com.android.application"
-    // START: FlutterFire Configuration
-    id 'com.google.gms.google-services'
-    // END: FlutterFire Configuration
+    id 'com.google.gms.google-services' // Ensure this line is included for Firebase services
     id "kotlin-android"
-    // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id "dev.flutter.flutter-gradle-plugin"
 }
 
@@ -27,35 +24,40 @@ if (flutterVersionName == null) {
 }
 
 android {
-    namespace = "com.example.flutterlogin"
-    compileSdk = flutter.compileSdkVersion
-    ndkVersion = flutter.ndkVersion
-
-    compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_1_8
-        targetCompatibility = JavaVersion.VERSION_1_8
-    }
+    compileSdkVersion 34// Update to your desired compileSdkVersion
+    buildToolsVersion "31.0.0" // Update to your desired buildToolsVersion
 
     defaultConfig {
-        // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
-        applicationId = "com.example.flutterlogin"
-        // You can update the following values to match your application needs.
-        // For more information, see: https://docs.flutter.dev/deployment/android#reviewing-the-gradle-build-configuration.
+        applicationId "com.example.flutterlogin" // Update with your actual applicationId
         minSdkVersion 23
-        targetSdk = flutter.targetSdkVersion
-        versionCode = flutterVersionCode.toInteger()
-        versionName = flutterVersionName
+        targetSdkVersion 31 // Update to your desired targetSdkVersion
+        versionCode flutterVersionCode.toInteger()
+        versionName flutterVersionName
+        multiDexEnabled true // Enable multidex if needed
     }
 
     buildTypes {
         release {
             // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
-            signingConfig = signingConfigs.debug
+            // Signing with the debug keys for now, so flutter run --release works.
+            signingConfig signingConfigs.debug
         }
+    }
+
+    // Enable multidex support if needed
+    dexOptions {
+        javaMaxHeapSize "4g"
     }
 }
 
 flutter {
-    source = "../.."
+    source "../.."
+}
+
+dependencies {
+    implementation 'com.facebook.android:facebook-android-sdk:12.2.0' // Replace with the latest version of Facebook SDK
+    implementation 'com.android.support:multidex:1.0.3' // Include multidex if needed
+    implementation 'androidx.multidex:multidex:2.0.1' // Include multidex if needed
+
+    // Other dependencies as per your project needs
 }
