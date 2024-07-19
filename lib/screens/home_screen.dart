@@ -10,7 +10,7 @@ import 'package:url_launcher/url_launcher_string.dart';
 class HomeScreen extends StatefulWidget {
   final User user;
 
-  HomeScreen({required this.user});
+  const HomeScreen({super.key, required this.user});
 
   @override
   _HomeScreenState createState() => _HomeScreenState();
@@ -80,17 +80,17 @@ class _HomeScreenState extends State<HomeScreen> {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: Text('Post to Facebook'),
-          content: Text('Do you want to post this image to Facebook?'),
+          title: const Text('Post to Facebook'),
+          content: const Text('Do you want to post this image to Facebook?'),
           actions: <Widget>[
             TextButton(
-              child: Text('Cancel'),
+              child: const Text('Cancel'),
               onPressed: () {
                 Navigator.of(context).pop();
               },
             ),
             TextButton(
-              child: Text('Post'),
+              child: const Text('Post'),
               onPressed: () {
                 Navigator.of(context).pop();
                 _handleFacebookPost(context, imageUrl);
@@ -141,8 +141,8 @@ class _HomeScreenState extends State<HomeScreen> {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: Text('Select a Group'),
-          content: Container(
+          title: const Text('Select a Group'),
+          content: SizedBox(
             width: double.minPositive,
             child: ListView.builder(
               shrinkWrap: true,
@@ -189,7 +189,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text("Dashboard"),
+        title: const Text("Dashboard"),
         backgroundColor: Colors.blue[200],
         actions: [
           IconButton(
@@ -214,8 +214,8 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
             ListTile(
-              leading: Icon(Icons.logout),
-              title: Text('Sign Out'),
+              leading: const Icon(Icons.logout),
+              title: const Text('Sign Out'),
               onTap: () async {
                 await GoogleSignIn().signOut();
                 await FirebaseAuth.instance.signOut();
@@ -226,7 +226,7 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
       ),
       body: Container(
-        decoration: BoxDecoration(
+        decoration: const BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
@@ -240,10 +240,10 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ),
         child: _isLoading
-            ? Center(child: CircularProgressIndicator())
+            ? const Center(child: CircularProgressIndicator())
             : GridView.count(
                 crossAxisCount: 2,
-                padding: EdgeInsets.all(16.0),
+                padding: const EdgeInsets.all(16.0),
                 children: List.generate(
                   _articles.length,
                   (index) {
